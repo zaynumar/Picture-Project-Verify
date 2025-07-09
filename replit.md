@@ -115,7 +115,7 @@ The architecture supports scalability through its modular design, proper separat
 
 ## Recent Changes: Latest modifications with dates
 
-### July 9, 2025 - Photo Verification System Complete
+### July 9, 2025 - Photo Verification System Complete & Bug Fixes
 - Removed real-time status updates requirement as requested
 - Built complete dual web application system with:
   - Role-based authentication (managers/workers)
@@ -126,3 +126,11 @@ The architecture supports scalability through its modular design, proper separat
   - PostgreSQL database with full schema implementation
   - Sequential workflow enforcement
   - File storage and serving capabilities
+
+#### Bug Fixes Applied:
+- Fixed step numbering inconsistency (was showing "Step 0" instead of "Step 1")
+- Enhanced progress indicator to show step titles for all steps (including locked ones)
+- Fixed navigation issues by replacing window.location.href with proper React routing
+- Improved approve/reject workflow logic with proper step advancement
+- Added debugging logs for review creation and step transitions
+- Fixed step order display to use actual step.order instead of array index

@@ -289,19 +289,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update step status based on review
       const upload = await storage.getUpload(validation.data.uploadId);
       if (upload) {
-        await storage.updateStepStatus(upload.stepId, validation.data.status);
+        // Don't update step status here, we'll do it after the workflow logic
+        console.log(`Creating review for upload ${upload.id}, status: ${validation.data.status}`);
         
-        // If approved, check if this is the last step and update job status
+        // Update step status and handle workflow
         if (validation.data.status === "approved") {
+          await storage.updateStepStatus(upload.stepId, "approved");
+          
+          // Find and activate next step
           const step = await storage.getStep(upload.stepId);
           if (step) {
             const allSteps = await storage.getStepsByJob(step.jobId);
-            const allApproved = allSteps.every(s => s.status === "approved");
+            const sortedSteps = allSteps.sort((a, b) => a.order - b.order);
             
-            if (allApproved) {
-              await storage.updateJobStatus(step.jobId, "completed");
+            // Find the next step to activate
+            const nextStep = sortedSteps.find(s => s.order > step.order && s.status === "pending");
+            if (nextStep) {
+              await storage.updateStepStatus(nextStep.id, "awaiting_upload");
+              console.log(`Activated next step ${nextStep.id}`);
+            } else {
+              // Check if all steps are completed
+              const allApproved = sortedSteps.every(s => s.order <= step.order ? true : s.status === "approved");
+              if (allApproved) {
+                await storage.updateJobStatus(step.jobId, "completed");
+                console.log(`Job ${step.jobId} completed`);
+              }
             }
           }
+        } else if (validation.data.status === "rejected") {
+          await storage.updateStepStatus(upload.stepId, "awaiting_upload");
+          console.log(`Step ${upload.stepId} rejected, reset to awaiting_upload`);
         }
       }
 

@@ -257,15 +257,16 @@ export default function WorkerDashboard() {
                             <Lock className="h-4 w-4 text-white" />
                           )}
                         </div>
-                        <span className={`ml-2 text-sm font-medium ${
+                        <div className={`ml-2 text-sm ${
                           step.status === "approved" ? "text-green-600" :
                           step.status === "awaiting_review" ? "text-yellow-600" :
                           step.status === "rejected" ? "text-red-600" :
                           step.status === "awaiting_upload" ? "text-blue-600" :
                           "text-gray-400"
                         }`}>
-                          Step {index + 1}
-                        </span>
+                          <div className="font-medium">Step {step.order}</div>
+                          <div className="text-xs">{step.title}</div>
+                        </div>
                       </div>
                       {index < activeJob.steps.length - 1 && (
                         <div className={`flex-1 h-0.5 mx-4 ${
@@ -292,7 +293,7 @@ export default function WorkerDashboard() {
                     </div>
                     <div>
                       <CardTitle>
-                        Step {activeJob.steps.indexOf(currentStep) + 1}: {currentStep.title}
+                        Step {currentStep.order}: {currentStep.title}
                       </CardTitle>
                       <p className="text-muted-foreground">{currentStep.description}</p>
                     </div>
