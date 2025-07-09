@@ -1,0 +1,170 @@
+**Product Requirements Document (PRD)**
+*AI‑Powered Photo Verification Web Apps*
+
+---
+
+## 1. Purpose & Background
+
+Your client manages field workers who must document sequential on‑site tasks by uploading photographs in a strict, ordered workflow. The goal is to deliver two interconnected web apps—one for the client (manager) and one for the worker—so that:
+
+* Workers cannot advance until each photo is verified.
+* The manager reviews, approves/denies each image, and can provide feedback on rejections.
+
+---
+
+## 2. Stakeholders
+
+* **Primary**
+
+  * **Client (Manager)**: Logs into Manager App, defines required photo‐upload steps, approves or rejects worker submissions, and provides feedback.
+  * **Worker**: Logs into Worker App, views current required step, captures/uploads the requested photo, and waits for approval before proceeding.
+* **Secondary**
+
+  * **AI Coding Assistant**: Your internal teammate, will implement the UI, back‑end logic, state management, and notifications.
+
+---
+
+## 3. Objectives & Success Metrics
+
+* **Rapid Prototype**: Deliver a “fully working” MVP within defined sprint (e.g. 4 weeks).
+* **Correctness**: Each step’s photo must be correctly associated with its stage, and workers must be blocked from skipping ahead.
+* **Usability**: Clear, minimal UIs for both roles; low error rate in uploads and approvals.
+* **Scalability**: Architecture must allow future addition of steps, multiple projects, and user accounts without rewrites.
+
+---
+
+## 4. User Roles & Permissions
+
+| Role    | View                            | Actions                            | Notifications                           |
+| ------- | ------------------------------- | ---------------------------------- | --------------------------------------- |
+| Manager | Dashboard of active jobs, steps | Approve/Deny images, add feedback  | New‐upload alerts, rejection follow‑ups |
+| Worker  | Current step & instructions     | Upload image, view approval status | Approval/denial with feedback           |
+
+---
+
+## 5. Core Features
+
+### 5.1. Manager App
+
+1. **Authentication**
+
+   * Login/logout, session management
+2. **Job & Step Configuration**
+
+   * View list of jobs (e.g. “John’s Roof Inspection”)
+   * For each job, define N sequential steps (e.g. Step 1: Empty Roof; Step 2: Panel Data Patch Plate; Step 3: Panel Serial Numbers)
+3. **Dashboard & Workflow**
+
+   * For selected job, display each step in order with status (Pending, Awaiting Upload, Awaiting Review, Approved, Rejected)
+   * Click into a step to view uploaded image(s)
+   * Approve or Reject, with optional free‑text feedback on rejection
+4. **Notifications**
+
+   * Real‑time or polling‑based alerts when a worker submits an image
+   * Optionally email/push notifications
+
+### 5.2. Worker App
+
+1. **Authentication**
+
+   * Login/logout, session management
+2. **Task Flow**
+
+   * On login, show current step only
+   * File‐upload control to submit required photo(s)
+   * Display “Waiting for approval” after upload
+3. **Approval Feedback**
+
+   * Upon approval: automatically advance to next step
+   * Upon rejection: show manager’s feedback text, allow re‑upload
+
+### 5.3. Shared Components & Services
+
+* **API Layer**
+
+  * Endpoint to fetch job & step definitions
+  * Upload endpoint (with metadata: user, step, timestamp)
+  * Review endpoint (approve/reject + feedback)
+  * Real‑time updates (WebSockets or polling)
+* **Data Storage**
+
+  * Relational or document DB for users, jobs, steps, uploads, reviews
+  * Object storage for images (with secure URLs)
+* **Notifications / Messaging**
+
+  * Internal queue or service for pushing events to front‑end clients
+
+---
+
+## 6. User Flows
+
+### 6.1. Worker Flow
+
+1. **Login → Dashboard**: “Hello, Worker” → shows Step 1 label & instructions.
+2. **Upload**: Select file → Submit → “Waiting for approval…”
+3. **Feedback Loop**
+
+   * If Approved: “Success! Step 2: \[Next instructions]”
+   * If Rejected: “Your upload was not approved. Feedback: ‘…’” → Re‑upload control remains
+
+### 6.2. Manager Flow
+
+1. **Login → Job Selection**: “Hello, John” → list of jobs
+2. **Select Job → Step Overview**: Four stages displayed with statuses
+3. **Review Upload**
+
+   * Click into Step 1 → View worker’s photo(s)
+   * Click Approve or Reject + optional feedback → State updates
+4. **Notification Sent** → Worker App updates in near‑real‑time
+
+---
+
+## 7. Functional Requirements
+
+| ID    | User Story                                                                                        | Acceptance Criteria                                                                    |
+| ----- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| FR‑01 | As a manager, I want to define N steps for a job so that I can tailor workflows per project area. | I can create/edit job entries and add/remove steps, each with a title and description. |
+| FR‑02 | As a worker, I must upload exactly the photo type requested before proceeding.                    | Upload is blocked unless file is provided; next step only unlocked upon approval.      |
+| FR‑03 | As a manager, I can approve or reject each submission and provide feedback on rejections.         | Clicking Approve changes state; Reject prompts for text, then worker sees feedback.    |
+| FR‑04 | Both user roles see real‑time updates to statuses without manual page refresh.                    | State changes propagate via WebSocket or polling within X seconds.                     |
+
+---
+
+## 8. Non‑Functional Requirements
+
+* **Performance**: Upload and review actions complete within 2 seconds.
+* **Security**:
+
+  * Authentication via secure tokens (JWT or session cookies).
+  * Access control: workers see only their job and step, managers see only their jobs.
+  * Image storage secured (signed URLs, access policies).
+* **Scalability**:
+
+  * Stateless API servers behind a load balancer.
+  * Horizontal scaling for WebSocket connections if used.
+* **Maintainability**:
+
+  * Clear separation of front‑end, back‑end, and storage layers.
+  * Well‑documented API specs (e.g. OpenAPI).
+* **Internationalization** (future): support for multiple languages/formats.
+
+---
+
+## 9. Future Enhancements (Beyond MVP)
+
+* AI‑driven auto‑verification suggestions (e.g. detect empty roof vs. non‑empty).
+* Bulk job/step import via CSV or UI wizard.
+* Role hierarchy (regional managers, supervisor overrides).
+* Mobile‑friendly native wrapper (mobile uploads with camera integration).
+
+---
+
+## 10. Success Criteria & Next Steps
+
+1. **Prototype Delivery** – Basic two‑app workflow operational with 3 steps.
+2. **User Testing** – Conduct pilot with real client/worker, gather feedback on flow and UI clarity.
+3. **Iteration** – Refine based on usability issues, add notification channels, and plan AI auto‑check integration.
+
+---
+
+*Prepared for handoff to your AI Software Developer – tech‑agnostic, modular, and ready for implementation.*
