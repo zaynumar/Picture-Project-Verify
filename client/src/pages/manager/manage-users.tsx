@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { ArrowLeft, Users, Mail, Calendar, Shield, UserCheck } from "lucide-reac
 export default function ManageUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/users"],
@@ -80,7 +82,7 @@ export default function ManageUsers() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <Button 
-                onClick={() => window.location.href = '/manager'}
+                onClick={() => setLocation('/manager')}
                 variant="ghost"
                 size="sm"
                 className="mr-3 text-white hover:bg-white/10"

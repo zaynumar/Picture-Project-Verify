@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ interface JobFormData {
 export default function CreateJob() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   const { data: workers = [] } = useQuery({
     queryKey: ["/api/workers"],
@@ -55,7 +57,7 @@ export default function CreateJob() {
         description: "Job created successfully!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
-      window.location.href = "/manager";
+      setLocation("/manager");
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -89,7 +91,7 @@ export default function CreateJob() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <Button 
-                onClick={() => window.location.href = '/manager'}
+                onClick={() => setLocation('/manager')}
                 variant="ghost"
                 size="sm"
                 className="mr-3 text-white hover:bg-white/10"
@@ -235,7 +237,7 @@ export default function CreateJob() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => window.location.href = '/manager'}
+              onClick={() => setLocation('/manager')}
             >
               Cancel
             </Button>
