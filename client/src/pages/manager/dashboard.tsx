@@ -136,10 +136,7 @@ export default function ManagerDashboard() {
       <header className="bg-primary text-primary-foreground shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <List className="h-6 w-6 mr-3" />
-              <h1 className="text-xl font-semibold">Manager Dashboard</h1>
-            </div>
+            <h1 className="text-xl font-semibold">Manager Dashboard</h1>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center">

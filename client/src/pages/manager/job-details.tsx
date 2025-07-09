@@ -20,7 +20,8 @@ import {
   User,
   Calendar,
   List,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import type { JobWithDetails, StepWithDetails } from "@shared/schema";
 
@@ -351,67 +352,118 @@ export default function JobDetails() {
                       </div>
                     )}
 
-                    {/* Upload Review Section */}
+                    {/* Upload Review Section - Only show latest upload */}
                     {step.uploads.length > 0 && (
                       <div className="mt-4">
-                        {step.uploads.map((upload) => (
-                          <div key={upload.id} className="bg-white p-4 rounded-lg border">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="text-sm text-muted-foreground">
-                                <span>Uploaded: {formatTimeAgo(upload.uploadedAt!)}</span>
-                                <span className="ml-4">File: {upload.originalName}</span>
-                              </div>
-                            </div>
-                            
-                            {/* Photo Preview */}
-                            <div className="mb-3">
-                              <img 
-                                src={`/api/uploads/${upload.filename}`}
-                                alt={`Upload for ${step.title}`}
-                                className="w-full h-48 object-cover rounded-lg"
-                              />
-                            </div>
-                            
-                            {/* Review Actions */}
-                            {step.status === "awaiting_review" && (
-                              <div className="flex items-center space-x-3">
-                                <Button 
-                                  onClick={() => approveUpload.mutate(upload.id)}
-                                  disabled={approveUpload.isPending}
-                                  className="bg-green-600 hover:bg-green-700"
+                        {(() => {
+                          // Only show the latest upload for review
+                          const latestUpload = step.uploads[step.uploads.length - 1];
+                          const hasNoReview = latestUpload.reviews.length === 0;
+                          
+                          return (
+                            <div key={latestUpload.id} className="bg-white p-4 rounded-lg border">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="text-sm text-muted-foreground">
+                                  <span>Uploaded: {formatTimeAgo(latestUpload.uploadedAt!)}</span>
+                                  <span className="ml-4">File: {latestUpload.originalName}</span>
+                                </div>
+                                {/* Download button */}
+                                <Button
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = `/api/uploads/${latestUpload.filename}`;
+                                    link.download = latestUpload.originalName;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }}
+                                  variant="outline"
+                                  size="sm"
                                 >
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Approve
-                                </Button>
-                                <Button 
-                                  onClick={() => setSelectedUpload({ uploadId: upload.id, stepTitle: step.title })}
-                                  disabled={rejectUpload.isPending}
-                                  variant="destructive"
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Reject
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
                                 </Button>
                               </div>
-                            )}
-                            
-                            {/* Show review feedback if exists */}
-                            {upload.reviews.length > 0 && (
-                              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                                <p className="text-sm font-medium text-foreground mb-1">
-                                  Review: {upload.reviews[0].status}
-                                </p>
-                                {upload.reviews[0].feedback && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {upload.reviews[0].feedback}
+                              
+                              {/* Photo Preview */}
+                              <div className="mb-3">
+                                <img 
+                                  src={`/api/uploads/${latestUpload.filename}`}
+                                  alt={`Upload for ${step.title}`}
+                                  className="w-full h-48 object-cover rounded-lg"
+                                />
+                              </div>
+                              
+                              {/* Review Actions - Only show if this upload hasn't been reviewed yet */}
+                              {step.status === "awaiting_review" && hasNoReview && (
+                                <div className="flex items-center space-x-3">
+                                  <Button 
+                                    onClick={() => approveUpload.mutate(latestUpload.id)}
+                                    disabled={approveUpload.isPending}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Approve
+                                  </Button>
+                                  <Button 
+                                    onClick={() => setSelectedUpload({ uploadId: latestUpload.id, stepTitle: step.title })}
+                                    disabled={rejectUpload.isPending}
+                                    variant="destructive"
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+                              
+                              {/* Show review feedback if exists */}
+                              {latestUpload.reviews.length > 0 && (
+                                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                  <p className="text-sm font-medium text-foreground mb-1">
+                                    Review: {latestUpload.reviews[0].status}
                                   </p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {formatTimeAgo(upload.reviews[0].reviewedAt!)}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                                  {latestUpload.reviews[0].feedback && (
+                                    <p className="text-sm text-muted-foreground">
+                                      {latestUpload.reviews[0].feedback}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {formatTimeAgo(latestUpload.reviews[0].reviewedAt!)}
+                                  </p>
+                                </div>
+                              )}
+                              
+                              {/* Show previous uploads history if there are multiple */}
+                              {step.uploads.length > 1 && (
+                                <div className="mt-3 pt-3 border-t">
+                                  <p className="text-xs text-muted-foreground mb-2">Previous uploads ({step.uploads.length - 1}):</p>
+                                  <div className="space-y-1">
+                                    {step.uploads.slice(0, -1).map((oldUpload, idx) => (
+                                      <div key={oldUpload.id} className="text-xs text-muted-foreground flex items-center justify-between">
+                                        <span>Upload {idx + 1}: {oldUpload.reviews[0]?.status || 'No review'}</span>
+                                        <Button
+                                          onClick={() => {
+                                            const link = document.createElement('a');
+                                            link.href = `/api/uploads/${oldUpload.filename}`;
+                                            link.download = oldUpload.originalName;
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                          }}
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 px-2 text-xs"
+                                        >
+                                          <Download className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>

@@ -134,3 +134,14 @@ The architecture supports scalability through its modular design, proper separat
 - Improved approve/reject workflow logic with proper step advancement
 - Added debugging logs for review creation and step transitions
 - Fixed step order display to use actual step.order instead of array index
+
+### July 9, 2025 - Manager Dashboard Enhancements & Worker Multi-Job Support
+- Removed non-functional checklist icon button from manager dashboard header
+- Added download image functionality for managers to save worker photos to their device
+- Fixed issue where rejected image feedback wasn't visible to workers - now shows manager's comments
+- Resolved multiple image approval bug - now only latest upload shows approve/reject buttons
+- Previous uploads are shown in a compact history view with download option
+- Completely rebuilt worker dashboard to support multiple job assignments
+- Workers can now view and work on multiple jobs simultaneously
+- Each job shows as a card with progress, current step details, and upload functionality
+- Added delete step functionality for managers in job details page

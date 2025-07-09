@@ -282,6 +282,25 @@ export default function WorkerDashboard() {
                             </div>
                           )}
 
+                          {/* Show rejection feedback if there was a previous rejection */}
+                          {currentStep.status === "awaiting_upload" && currentStep.uploads.length > 0 && (
+                            <>
+                              {currentStep.uploads[currentStep.uploads.length - 1].reviews.some(r => r.status === "rejected") && (
+                                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded">
+                                  <p className="text-sm font-medium text-red-800 mb-1">Previous upload was rejected</p>
+                                  {currentStep.uploads[currentStep.uploads.length - 1].reviews
+                                    .filter(r => r.status === "rejected")
+                                    .map((review, idx) => (
+                                      <p key={idx} className="text-xs text-red-700">
+                                        Manager feedback: {review.feedback || "No feedback provided"}
+                                      </p>
+                                    ))
+                                  }
+                                </div>
+                              )}
+                            </>
+                          )}
+
                           {/* Upload Section */}
                           {currentStep.status === "awaiting_upload" && (
                             <div className="mt-3">
