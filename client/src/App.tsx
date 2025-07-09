@@ -8,6 +8,8 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import ManagerDashboard from "@/pages/manager/dashboard";
 import JobDetails from "@/pages/manager/job-details";
+import CreateJob from "@/pages/manager/create-job";
+import ManageUsers from "@/pages/manager/manage-users";
 import WorkerDashboard from "@/pages/worker/dashboard";
 
 function Router() {
@@ -35,6 +37,8 @@ function Router() {
               <Route path="/" component={ManagerDashboard} />
               <Route path="/manager" component={ManagerDashboard} />
               <Route path="/manager/job/:id" component={JobDetails} />
+              <Route path="/manager/create-job" component={CreateJob} />
+              <Route path="/manager/manage-users" component={ManageUsers} />
             </>
           ) : (
             <>

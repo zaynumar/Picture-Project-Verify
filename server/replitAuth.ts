@@ -57,12 +57,18 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
+  // Check if this is the first user - if so, make them a manager
+  const existingUser = await storage.getUser(claims["sub"]);
+  const allUsers = await storage.getAllUsers();
+  
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
+    // Make first user a manager, or keep existing role
+    role: existingUser?.role || (allUsers.length === 0 ? "manager" : "worker"),
   });
 }
 

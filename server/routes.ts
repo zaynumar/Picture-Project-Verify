@@ -41,6 +41,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all workers (for managers to assign jobs)
+  app.get("/api/workers", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== "manager") {
+        return res.status(403).json({ message: "Only managers can view workers" });
+      }
+
+      const allUsers = await storage.getAllUsers();
+      const workers = allUsers.filter(u => u.role === "worker");
+      res.json(workers);
+    } catch (error) {
+      console.error("Error fetching workers:", error);
+      res.status(500).json({ message: "Failed to fetch workers" });
+    }
+  });
+
+  // Get all users (for managers to manage roles)
+  app.get("/api/users", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== "manager") {
+        return res.status(403).json({ message: "Only managers can view users" });
+      }
+
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Update user role
+  app.patch("/api/users/:id/role", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== "manager") {
+        return res.status(403).json({ message: "Only managers can update user roles" });
+      }
+
+      const { role } = req.body;
+      const targetUserId = req.params.id;
+      
+      if (!["manager", "worker"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      await storage.updateUserRole(targetUserId, role);
+      res.json({ message: "User role updated successfully" });
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Failed to update user role" });
+    }
+  });
+
   // Job routes
   app.post("/api/jobs", isAuthenticated, async (req: any, res) => {
     try {
@@ -51,19 +113,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only managers can create jobs" });
       }
 
-      const validation = insertJobSchema.safeParse(req.body);
-      if (!validation.success) {
+      const { title, description, workerId, steps } = req.body;
+      
+      if (!title || !workerId || !steps || steps.length === 0) {
         return res.status(400).json({ 
-          message: fromZodError(validation.error).toString()
+          message: "Title, worker ID, and at least one step are required"
         });
       }
 
+      // Create the job
       const job = await storage.createJob({
-        ...validation.data,
+        title,
+        description,
+        workerId,
         managerId: userId,
+        status: "in_progress"
       });
 
-      res.json(job);
+      // Create the steps
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        await storage.createStep({
+          jobId: job.id,
+          title: step.title,
+          description: step.description,
+          instructions: step.instructions,
+          order: i + 1,
+          status: i === 0 ? "awaiting_upload" : "pending"
+        });
+      }
+
+      const fullJob = await storage.getJob(job.id);
+      res.json(fullJob);
     } catch (error) {
       console.error("Error creating job:", error);
       res.status(500).json({ message: "Failed to create job" });

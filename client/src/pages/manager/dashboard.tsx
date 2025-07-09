@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Link } from "wouter";
-import { Plus, RefreshCw, Clock, CheckCircle, AlertCircle, User, Calendar, List } from "lucide-react";
+import { Plus, RefreshCw, Clock, CheckCircle, AlertCircle, User, Calendar, List, Users } from "lucide-react";
 import type { JobWithDetails } from "@shared/schema";
 
 export default function ManagerDashboard() {
@@ -141,7 +141,11 @@ export default function ManagerDashboard() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button>
+            <Button onClick={() => window.location.href = '/manager/manage-users'} variant="outline">
+              <Users className="h-4 w-4 mr-2" />
+              Manage Users
+            </Button>
+            <Button onClick={() => window.location.href = '/manager/create-job'}>
               <Plus className="h-4 w-4 mr-2" />
               New Job
             </Button>
@@ -157,7 +161,7 @@ export default function ManagerDashboard() {
               <p className="text-muted-foreground mb-4">
                 Create your first job to start managing field worker photo verification workflows.
               </p>
-              <Button>
+              <Button onClick={() => window.location.href = '/manager/create-job'}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Job
               </Button>
