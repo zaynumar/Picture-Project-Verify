@@ -19,7 +19,8 @@ import {
   Camera,
   User,
   Calendar,
-  List
+  List,
+  Trash2
 } from "lucide-react";
 import type { JobWithDetails, StepWithDetails } from "@shared/schema";
 
@@ -117,6 +118,38 @@ export default function JobDetails() {
       toast({
         title: "Error",
         description: "Failed to reject photo. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteStep = useMutation({
+    mutationFn: async (stepId: number) => {
+      await apiRequest("DELETE", `/api/steps/${stepId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Step deleted successfully!",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs", id] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete step. Please try again.",
         variant: "destructive",
       });
     },
@@ -291,11 +324,22 @@ export default function JobDetails() {
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-foreground">
-                        Step {index + 1}: {step.title}
+                        Step {step.order}: {step.title}
                       </h4>
-                      <Badge className={getStepStatusColor(step.status)}>
-                        {step.status.replace('_', ' ')}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getStepStatusColor(step.status)}>
+                          {step.status.replace('_', ' ')}
+                        </Badge>
+                        <Button
+                          onClick={() => deleteStep.mutate(step.id)}
+                          disabled={deleteStep.isPending}
+                          variant="outline"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
                       {step.description}

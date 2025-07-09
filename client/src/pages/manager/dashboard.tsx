@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
-import { Plus, RefreshCw, Clock, CheckCircle, AlertCircle, User, Calendar, List, Users } from "lucide-react";
+import { Plus, RefreshCw, Clock, CheckCircle, AlertCircle, User, Calendar, List, Users, Trash2 } from "lucide-react";
 import type { JobWithDetails } from "@shared/schema";
 
 export default function ManagerDashboard() {
@@ -33,6 +34,38 @@ export default function ManagerDashboard() {
   const { data: jobs = [], isLoading: jobsLoading, refetch } = useQuery({
     queryKey: ["/api/jobs"],
     enabled: isAuthenticated,
+  });
+
+  const deleteJob = useMutation({
+    mutationFn: async (jobId: number) => {
+      await apiRequest("DELETE", `/api/jobs/${jobId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Job deleted successfully!",
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete job. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const getStatusColor = (status: string) => {
@@ -175,23 +208,37 @@ export default function ManagerDashboard() {
               const currentStep = getCurrentStep(job);
               
               return (
-                <Card 
-                  key={job.id} 
-                  className="hover:shadow-lg transition-all cursor-pointer"
-                  onClick={() => window.location.href = `/manager/job/${job.id}`}
-                >
+                <Card key={job.id} className="hover:shadow-lg transition-all">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg truncate">{job.title}</CardTitle>
-                      <Badge className={getStatusColor(jobStatus)}>
-                        {getStatusIcon(jobStatus)}
-                        <span className="ml-1 capitalize">
-                          {jobStatus.replace('_', ' ')}
-                        </span>
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusColor(jobStatus)}>
+                          {getStatusIcon(jobStatus)}
+                          <span className="ml-1 capitalize">
+                            {jobStatus.replace('_', ' ')}
+                          </span>
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
+                              deleteJob.mutate(job.id);
+                            }
+                          }}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent 
+                    className="cursor-pointer"
+                    onClick={() => setLocation(`/manager/job/${job.id}`)}
+                  >
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center text-muted-foreground">
                         <User className="h-4 w-4 mr-2" />

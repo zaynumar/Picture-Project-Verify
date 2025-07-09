@@ -329,6 +329,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete job route
+  app.delete("/api/jobs/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== "manager") {
+        return res.status(403).json({ message: "Only managers can delete jobs" });
+      }
+
+      const jobId = parseInt(req.params.id);
+      const job = await storage.getJob(jobId);
+      
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      if (job.managerId !== userId) {
+        return res.status(403).json({ message: "You can only delete your own jobs" });
+      }
+
+      await storage.deleteJob(jobId);
+      res.json({ message: "Job deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      res.status(500).json({ message: "Failed to delete job" });
+    }
+  });
+
+  // Delete step route
+  app.delete("/api/steps/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== "manager") {
+        return res.status(403).json({ message: "Only managers can delete steps" });
+      }
+
+      const stepId = parseInt(req.params.id);
+      const step = await storage.getStep(stepId);
+      
+      if (!step) {
+        return res.status(404).json({ message: "Step not found" });
+      }
+
+      // Check if the manager owns this job
+      const job = await storage.getJob(step.jobId);
+      if (!job || job.managerId !== userId) {
+        return res.status(403).json({ message: "You can only delete steps from your own jobs" });
+      }
+
+      await storage.deleteStep(stepId);
+      res.json({ message: "Step deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting step:", error);
+      res.status(500).json({ message: "Failed to delete step" });
+    }
+  });
+
   // Worker current step route
   app.get("/api/worker/current-step", isAuthenticated, async (req: any, res) => {
     try {

@@ -157,6 +157,7 @@ export const insertUploadSchema = createInsertSchema(uploads).omit({
 export const insertReviewSchema = createInsertSchema(reviews).omit({
   id: true,
   reviewedAt: true,
+  managerId: true, // managerId is added by server
 });
 
 // Types

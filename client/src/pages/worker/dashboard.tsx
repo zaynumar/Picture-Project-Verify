@@ -50,16 +50,17 @@ export default function WorkerDashboard() {
     enabled: isAuthenticated,
   });
 
-  const { data: currentStep, isLoading: stepLoading, refetch: refetchStep } = useQuery({
-    queryKey: ["/api/worker/current-step"],
-    enabled: isAuthenticated,
-  });
+  // Remove current step query since we'll work with multiple jobs
+  // const { data: currentStep, isLoading: stepLoading, refetch: refetchStep } = useQuery({
+  //   queryKey: ["/api/worker/current-step"],
+  //   enabled: isAuthenticated,
+  // });
 
   const uploadPhoto = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, stepId }: { file: File; stepId: number }) => {
       const formData = new FormData();
       formData.append("photo", file);
-      formData.append("stepId", currentStep?.id.toString() || "");
+      formData.append("stepId", stepId.toString());
       
       const response = await fetch("/api/uploads", {
         method: "POST",
@@ -81,7 +82,6 @@ export default function WorkerDashboard() {
         variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/worker/current-step"] });
       setUploadingFile(null);
     },
     onError: (error) => {
@@ -125,14 +125,17 @@ export default function WorkerDashboard() {
     return (approvedSteps / job.steps.length) * 100;
   };
 
-  const getCurrentStepNumber = (job: JobWithDetails) => {
-    const currentStep = job.steps.find(step => step.status !== "approved");
-    return currentStep ? job.steps.indexOf(currentStep) + 1 : job.steps.length;
-  };
+  // Helper function to get current active step
+  function getCurrentStep(job: JobWithDetails) {
+    return job.steps.find(step => 
+      step.status === "awaiting_upload" || step.status === "awaiting_review"
+    );
+  }
 
-  const activeJob = jobs.find((job: JobWithDetails) => job.status === "in_progress");
+  // Filter jobs assigned to this worker
+  const workerJobs = jobs.filter((job: JobWithDetails) => job.workerId === user?.id);
 
-  if (isLoading || jobsLoading || stepLoading) {
+  if (isLoading || jobsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -147,7 +150,7 @@ export default function WorkerDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-primary text-primary-foreground shadow-lg">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <Camera className="h-6 w-6 mr-3" />
@@ -176,213 +179,165 @@ export default function WorkerDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!activeJob ? (
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">My Jobs</h2>
+            <p className="text-muted-foreground">Complete photo verification tasks step by step</p>
+          </div>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+
+        {workerJobs.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
               <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Active Job</h3>
+              <h3 className="text-lg font-semibold mb-2">No Jobs Assigned</h3>
               <p className="text-muted-foreground">
-                You don't have any active jobs assigned. Please contact your manager.
+                You don't have any jobs assigned yet. Please contact your manager.
               </p>
             </CardContent>
           </Card>
         ) : (
-          <>
-            {/* Current Job Header */}
-            <Card className="mb-6">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>{activeJob.title}</CardTitle>
-                  <Badge className="bg-blue-100 text-blue-800">
-                    <Clock className="h-4 w-4 mr-1" />
-                    In Progress
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
-                  <div className="flex items-center text-muted-foreground">
-                    <User className="h-4 w-4 mr-2" />
-                    <span>Manager: {activeJob.manager.firstName} {activeJob.manager.lastName}</span>
-                  </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span>Started: {formatTimeAgo(activeJob.createdAt!)}</span>
-                  </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <List className="h-4 w-4 mr-2" />
-                    <span>Step {getCurrentStepNumber(activeJob)} of {activeJob.steps.length}</span>
-                  </div>
-                </div>
-                
-                {activeJob.description && (
-                  <p className="text-muted-foreground mb-4">{activeJob.description}</p>
-                )}
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Progress</span>
-                    <span>{Math.round(getJobProgress(activeJob))}%</span>
-                  </div>
-                  <Progress value={getJobProgress(activeJob)} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Progress Indicator */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Step Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-4 overflow-x-auto pb-2">
-                  {activeJob.steps.map((step, index) => (
-                    <div key={step.id} className="flex items-center flex-shrink-0">
-                      <div className="flex items-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          step.status === "approved" ? "bg-green-500" :
-                          step.status === "awaiting_review" ? "bg-yellow-500" :
-                          step.status === "rejected" ? "bg-red-500" :
-                          step.status === "awaiting_upload" ? "bg-blue-500" :
-                          "bg-gray-400"
-                        }`}>
-                          {step.status === "approved" ? (
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          ) : step.status === "awaiting_review" ? (
-                            <Clock className="h-4 w-4 text-white" />
-                          ) : step.status === "awaiting_upload" ? (
-                            <Camera className="h-4 w-4 text-white" />
-                          ) : (
-                            <Lock className="h-4 w-4 text-white" />
-                          )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {workerJobs.map((job: JobWithDetails) => {
+              const currentStep = getCurrentStep(job);
+              const progress = getJobProgress(job);
+              
+              return (
+                <Card key={job.id} className="hover:shadow-lg transition-all">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{job.title}</CardTitle>
+                      <Badge className={
+                        job.status === "completed" ? "bg-green-100 text-green-800" :
+                        job.status === "in_progress" ? "bg-blue-100 text-blue-800" :
+                        "bg-gray-100 text-gray-800"
+                      }>
+                        {job.status === "completed" ? <CheckCircle className="h-4 w-4 mr-1" /> :
+                         job.status === "in_progress" ? <Clock className="h-4 w-4 mr-1" /> :
+                         <Clock className="h-4 w-4 mr-1" />}
+                        {job.status === "completed" ? "Completed" :
+                         job.status === "in_progress" ? "In Progress" : "Pending"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Job Info */}
+                      <div className="grid grid-cols-1 gap-2 text-sm">
+                        <div className="flex items-center text-muted-foreground">
+                          <User className="h-4 w-4 mr-2" />
+                          <span>Manager: {job.manager.firstName} {job.manager.lastName}</span>
                         </div>
-                        <div className={`ml-2 text-sm ${
-                          step.status === "approved" ? "text-green-600" :
-                          step.status === "awaiting_review" ? "text-yellow-600" :
-                          step.status === "rejected" ? "text-red-600" :
-                          step.status === "awaiting_upload" ? "text-blue-600" :
-                          "text-gray-400"
-                        }`}>
-                          <div className="font-medium">Step {step.order}</div>
-                          <div className="text-xs">{step.title}</div>
+                        <div className="flex items-center text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          <span>Started: {formatTimeAgo(job.createdAt!)}</span>
                         </div>
                       </div>
-                      {index < activeJob.steps.length - 1 && (
-                        <div className={`flex-1 h-0.5 mx-4 ${
-                          step.status === "approved" ? "bg-green-500" : "bg-gray-200"
-                        }`} style={{ minWidth: "2rem" }} />
+
+                      {job.description && (
+                        <p className="text-sm text-muted-foreground">{job.description}</p>
                       )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Current Step */}
-            {currentStep && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
-                      currentStep.status === "awaiting_review" ? "bg-yellow-500" :
-                      currentStep.status === "rejected" ? "bg-red-500" :
-                      "bg-blue-500"
-                    }`}>
-                      <Camera className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle>
-                        Step {currentStep.order}: {currentStep.title}
-                      </CardTitle>
-                      <p className="text-muted-foreground">{currentStep.description}</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Step Instructions */}
-                  {currentStep.instructions && (
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-                      <h4 className="font-medium text-blue-800 mb-2">Instructions:</h4>
-                      <p className="text-sm text-blue-700">{currentStep.instructions}</p>
-                    </div>
-                  )}
-
-                  {/* Upload Status */}
-                  {currentStep.status === "awaiting_review" && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                      <div className="flex items-center">
-                        <Clock className="h-5 w-5 text-yellow-600 mr-2" />
-                        <div>
-                          <h4 className="font-medium text-yellow-800">Photo Submitted - Awaiting Review</h4>
-                          <p className="text-sm text-yellow-700">
-                            Your photo has been uploaded and is being reviewed by the manager.
-                          </p>
+                      {/* Progress */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>Progress</span>
+                          <span>{Math.round(progress)}%</span>
                         </div>
+                        <Progress value={progress} className="h-2" />
                       </div>
-                    </div>
-                  )}
 
-                  {currentStep.status === "rejected" && currentStep.uploads.length > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                      <div className="flex items-center">
-                        <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                        <div>
-                          <h4 className="font-medium text-red-800">Photo Rejected</h4>
-                          <p className="text-sm text-red-700 mb-2">
-                            Your photo was not approved. Please review the feedback and upload a new photo.
-                          </p>
-                          {currentStep.uploads[0]?.reviews[0]?.feedback && (
-                            <div className="bg-red-100 p-3 rounded mt-2">
-                              <p className="text-sm text-red-800 font-medium">Manager Feedback:</p>
-                              <p className="text-sm text-red-700">{currentStep.uploads[0].reviews[0].feedback}</p>
+                      {/* Current Step */}
+                      {currentStep && (
+                        <div className="p-4 bg-blue-50 rounded-lg border">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-blue-900">
+                              Step {currentStep.order}: {currentStep.title}
+                            </h4>
+                            <Badge className={
+                              currentStep.status === "awaiting_upload" ? "bg-blue-100 text-blue-800" :
+                              currentStep.status === "awaiting_review" ? "bg-yellow-100 text-yellow-800" :
+                              "bg-gray-100 text-gray-800"
+                            }>
+                              {currentStep.status === "awaiting_upload" ? "Ready to Upload" :
+                               currentStep.status === "awaiting_review" ? "Pending Review" : 
+                               currentStep.status}
+                            </Badge>
+                          </div>
+                          
+                          {currentStep.description && (
+                            <p className="text-sm text-blue-700 mb-3">{currentStep.description}</p>
+                          )}
+                          
+                          {currentStep.instructions && (
+                            <div className="mb-3">
+                              <p className="text-xs font-medium text-blue-900 mb-1">Instructions:</p>
+                              <p className="text-xs text-blue-700">{currentStep.instructions}</p>
+                            </div>
+                          )}
+
+                          {/* Upload Section */}
+                          {currentStep.status === "awaiting_upload" && (
+                            <div className="mt-3">
+                              <FileUpload
+                                onFileSelect={(file) => {
+                                  setUploadingFile(file);
+                                  uploadPhoto.mutate({ file, stepId: currentStep.id });
+                                }}
+                                isUploading={uploadPhoto.isPending && uploadingFile !== null}
+                                accept="image/*"
+                                maxSize={10 * 1024 * 1024}
+                                className="border-dashed border-2 border-blue-300"
+                              />
+                            </div>
+                          )}
+
+                          {/* Show uploaded photo if pending review */}
+                          {currentStep.status === "awaiting_review" && currentStep.uploads.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-medium text-yellow-700 mb-2">Photo uploaded, waiting for review:</p>
+                              <img 
+                                src={`/api/uploads/${currentStep.uploads[0].filename}`}
+                                alt="Uploaded photo"
+                                className="w-full max-w-xs rounded border"
+                              />
                             </div>
                           )}
                         </div>
+                      )}
+
+                      {/* Steps Overview */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">All Steps:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {job.steps.sort((a, b) => a.order - b.order).map((step) => (
+                            <div 
+                              key={step.id}
+                              className={`px-2 py-1 rounded text-xs ${
+                                step.status === "approved" ? "bg-green-100 text-green-700" :
+                                step.status === "awaiting_review" ? "bg-yellow-100 text-yellow-700" :
+                                step.status === "awaiting_upload" ? "bg-blue-100 text-blue-700" :
+                                step.status === "rejected" ? "bg-red-100 text-red-700" :
+                                "bg-gray-100 text-gray-600"
+                              }`}
+                            >
+                              Step {step.order}: {step.title}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  )}
-
-                  {/* Upload Section */}
-                  {(currentStep.status === "awaiting_upload" || currentStep.status === "rejected") && (
-                    <div className="space-y-4">
-                      <FileUpload
-                        onFileSelect={(file) => {
-                          setUploadingFile(file);
-                          uploadPhoto.mutate(file);
-                        }}
-                        isUploading={uploadPhoto.isPending}
-                        accept="image/*"
-                        maxSize={10 * 1024 * 1024} // 10MB
-                      />
-                      <p className="text-xs text-muted-foreground text-center">
-                        Maximum file size: 10MB. Supported formats: JPG, PNG
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-between pt-6">
-                    <Button variant="outline" size="sm">
-                      <HelpCircle className="h-4 w-4 mr-2" />
-                      Get Help
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        refetch();
-                        refetchStep();
-                      }}
-                      variant="outline" 
-                      size="sm"
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Check Status
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </main>
     </div>

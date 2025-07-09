@@ -33,12 +33,14 @@ export interface IStorage {
   getJobsByManager(managerId: string): Promise<JobWithDetails[]>;
   getJobsByWorker(workerId: string): Promise<JobWithDetails[]>;
   updateJobStatus(id: number, status: string): Promise<void>;
+  deleteJob(id: number): Promise<void>;
   
   // Step operations
   createStep(step: InsertStep): Promise<Step>;
   getStepsByJob(jobId: number): Promise<StepWithDetails[]>;
   getStep(id: number): Promise<StepWithDetails | undefined>;
   updateStepStatus(id: number, status: string): Promise<void>;
+  deleteStep(id: number): Promise<void>;
   
   // Upload operations
   createUpload(upload: InsertUpload): Promise<Upload>;
@@ -158,6 +160,24 @@ export class DatabaseStorage implements IStorage {
     await db.update(jobs).set({ status, updatedAt: new Date() }).where(eq(jobs.id, id));
   }
 
+  async deleteJob(id: number): Promise<void> {
+    // Delete related data first due to foreign key constraints
+    const jobSteps = await db.select().from(steps).where(eq(steps.jobId, id));
+    for (const step of jobSteps) {
+      const stepUploads = await db.select().from(uploads).where(eq(uploads.stepId, step.id));
+      for (const upload of stepUploads) {
+        // Delete reviews
+        await db.delete(reviews).where(eq(reviews.uploadId, upload.id));
+      }
+      // Delete uploads
+      await db.delete(uploads).where(eq(uploads.stepId, step.id));
+    }
+    // Delete steps
+    await db.delete(steps).where(eq(steps.jobId, id));
+    // Finally delete the job
+    await db.delete(jobs).where(eq(jobs.id, id));
+  }
+
   // Step operations
   async createStep(step: InsertStep): Promise<Step> {
     const [newStep] = await db.insert(steps).values(step).returning();
@@ -195,6 +215,19 @@ export class DatabaseStorage implements IStorage {
 
   async updateStepStatus(id: number, status: string): Promise<void> {
     await db.update(steps).set({ status, updatedAt: new Date() }).where(eq(steps.id, id));
+  }
+
+  async deleteStep(id: number): Promise<void> {
+    // Delete related uploads and reviews first
+    const stepUploads = await db.select().from(uploads).where(eq(uploads.stepId, id));
+    for (const upload of stepUploads) {
+      // Delete reviews
+      await db.delete(reviews).where(eq(reviews.uploadId, upload.id));
+    }
+    // Delete uploads
+    await db.delete(uploads).where(eq(uploads.stepId, id));
+    // Finally delete the step
+    await db.delete(steps).where(eq(steps.id, id));
   }
 
   // Upload operations
