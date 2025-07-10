@@ -258,6 +258,12 @@ export default function ManagerDashboard() {
                         <List className="h-4 w-4 mr-2" />
                         <span>Step {currentStep} of {job.steps.length}</span>
                       </div>
+                      {job.deadline && (
+                        <div className="flex items-center text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          <span>Due: {new Date(job.deadline).toLocaleDateString()}</span>
+                        </div>
+                      )}
                     </div>
                     
                     {job.description && (

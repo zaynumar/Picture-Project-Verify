@@ -162,3 +162,16 @@ The architecture supports scalability through its modular design, proper separat
 - Updated UI to conditionally hide create/modify functionality for view-only users
 - Added visual indicators and helpful messages for restricted actions
 - Enhanced role color coding in user management (purple for manager_view_only)
+
+### July 10, 2025 - Job and Step Deadline Functionality Implementation
+- Added deadline fields to jobs and steps database tables
+- Enhanced job creation form with deadline toggle controls:
+  - Toggle for job-level deadlines with datetime picker
+  - Individual toggle for each step deadline with datetime picker
+  - Conditional validation for deadlines when toggles are enabled
+- Updated backend API to process and validate deadline data
+- Added deadline display throughout the application:
+  - Manager dashboard shows job deadlines in job cards
+  - Job details page displays job and step deadlines with orange color coding
+  - Worker dashboard shows both job and step deadlines for prioritization
+- Deadline information helps teams prioritize work and meet time constraints

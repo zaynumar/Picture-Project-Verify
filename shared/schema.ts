@@ -44,6 +44,7 @@ export const jobs = pgTable("jobs", {
   managerId: varchar("manager_id").notNull(),
   workerId: varchar("worker_id").notNull(),
   status: varchar("status").notNull().default("pending"), // 'pending', 'in_progress', 'completed', 'rejected'
+  deadline: timestamp("deadline"), // Optional deadline for the entire job
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -57,6 +58,7 @@ export const steps = pgTable("steps", {
   instructions: text("instructions"),
   order: integer("order").notNull(),
   status: varchar("status").notNull().default("pending"), // 'pending', 'awaiting_upload', 'awaiting_review', 'approved', 'rejected'
+  deadline: timestamp("deadline"), // Optional deadline for individual steps
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

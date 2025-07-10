@@ -282,7 +282,7 @@ export default function JobDetails() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center text-muted-foreground">
                 <User className="h-4 w-4 mr-2" />
                 <span>Worker: {job.worker.firstName} {job.worker.lastName}</span>
@@ -295,6 +295,12 @@ export default function JobDetails() {
                 <List className="h-4 w-4 mr-2" />
                 <span>{job.steps.length} steps total</span>
               </div>
+              {job.deadline && (
+                <div className="flex items-center text-muted-foreground">
+                  <Calendar className="h-4 w-4 mr-2 text-orange-500" />
+                  <span className="text-orange-500">Due: {new Date(job.deadline).toLocaleDateString()}</span>
+                </div>
+              )}
             </div>
             {job.description && (
               <p className="text-muted-foreground mt-3">{job.description}</p>
@@ -324,9 +330,17 @@ export default function JobDetails() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-foreground">
-                        Step {step.order}: {step.title}
-                      </h4>
+                      <div>
+                        <h4 className="font-medium text-foreground">
+                          Step {step.order}: {step.title}
+                        </h4>
+                        {step.deadline && (
+                          <p className="text-xs text-orange-500 mt-1">
+                            <Calendar className="h-3 w-3 inline mr-1" />
+                            Due: {new Date(step.deadline).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
                       <div className="flex items-center space-x-2">
                         <Badge className={getStepStatusColor(step.status)}>
                           {step.status.replace('_', ' ')}

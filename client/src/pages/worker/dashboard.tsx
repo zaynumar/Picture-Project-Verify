@@ -238,6 +238,12 @@ export default function WorkerDashboard() {
                           <Calendar className="h-4 w-4 mr-2" />
                           <span>Started: {formatTimeAgo(job.createdAt!)}</span>
                         </div>
+                        {job.deadline && (
+                          <div className="flex items-center text-orange-500">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            <span>Job Due: {new Date(job.deadline).toLocaleDateString()}</span>
+                          </div>
+                        )}
                       </div>
 
                       {job.description && (
@@ -257,9 +263,17 @@ export default function WorkerDashboard() {
                       {currentStep && (
                         <div className="p-4 bg-blue-50 rounded-lg border">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-blue-900">
-                              Step {currentStep.order}: {currentStep.title}
-                            </h4>
+                            <div>
+                              <h4 className="font-medium text-blue-900">
+                                Step {currentStep.order}: {currentStep.title}
+                              </h4>
+                              {currentStep.deadline && (
+                                <p className="text-xs text-orange-500 mt-1">
+                                  <Calendar className="h-3 w-3 inline mr-1" />
+                                  Due: {new Date(currentStep.deadline).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
                             <Badge className={
                               currentStep.status === "awaiting_upload" ? "bg-blue-100 text-blue-800" :
                               currentStep.status === "awaiting_review" ? "bg-yellow-100 text-yellow-800" :

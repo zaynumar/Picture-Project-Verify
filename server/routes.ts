@@ -113,11 +113,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only managers can create jobs" });
       }
 
-      const { title, description, workerId, steps } = req.body;
+      const { title, description, workerId, steps, hasJobDeadline, jobDeadline } = req.body;
       
       if (!title || !workerId || !steps || steps.length === 0) {
         return res.status(400).json({ 
           message: "Title, worker ID, and at least one step are required"
+        });
+      }
+
+      // Validate job deadline if enabled
+      if (hasJobDeadline && !jobDeadline) {
+        return res.status(400).json({ 
+          message: "Job deadline is required when deadline toggle is enabled"
         });
       }
 
@@ -127,19 +134,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description,
         workerId,
         managerId: userId,
-        status: "in_progress"
+        status: "in_progress",
+        deadline: hasJobDeadline ? new Date(jobDeadline) : null
       });
 
       // Create the steps
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
+        
+        // Validate step deadline if enabled
+        if (step.hasDeadline && !step.deadline) {
+          return res.status(400).json({ 
+            message: `Step ${i + 1} deadline is required when deadline toggle is enabled`
+          });
+        }
+        
         await storage.createStep({
           jobId: job.id,
           title: step.title,
           description: step.description,
           instructions: step.instructions,
           order: i + 1,
-          status: i === 0 ? "awaiting_upload" : "pending"
+          status: i === 0 ? "awaiting_upload" : "pending",
+          deadline: step.hasDeadline ? new Date(step.deadline) : null
         });
       }
 

@@ -8,19 +8,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Calendar } from "lucide-react";
 
 interface JobFormData {
   title: string;
   description: string;
   workerId: string;
+  hasJobDeadline: boolean;
+  jobDeadline: string;
   steps: {
     title: string;
     description: string;
     instructions: string;
+    hasDeadline: boolean;
+    deadline: string;
   }[];
 }
 
@@ -38,9 +43,14 @@ export default function CreateJob() {
       title: "",
       description: "",
       workerId: "",
-      steps: [{ title: "", description: "", instructions: "" }]
+      hasJobDeadline: false,
+      jobDeadline: "",
+      steps: [{ title: "", description: "", instructions: "", hasDeadline: false, deadline: "" }]
     }
   });
+
+  const watchHasJobDeadline = watch("hasJobDeadline");
+  const watchSteps = watch("steps");
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -80,7 +90,20 @@ export default function CreateJob() {
   });
 
   const onSubmit = (data: JobFormData) => {
-    createJob.mutate(data);
+    // Process the form data to handle deadline logic
+    const processedData = {
+      ...data,
+      steps: data.steps.map(step => ({
+        title: step.title,
+        description: step.description,
+        instructions: step.instructions,
+        hasDeadline: step.hasDeadline,
+        deadline: step.hasDeadline ? step.deadline : undefined
+      })),
+      jobDeadline: data.hasJobDeadline ? data.jobDeadline : undefined
+    };
+    
+    createJob.mutate(processedData);
   };
 
   return (
@@ -155,6 +178,37 @@ export default function CreateJob() {
                   <p className="text-sm text-destructive mt-1">Please select a worker</p>
                 )}
               </div>
+
+              {/* Job Deadline Toggle */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Switch
+                    checked={watchHasJobDeadline}
+                    onCheckedChange={(checked) => setValue("hasJobDeadline", checked)}
+                  />
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="hasJobDeadline">Set job deadline</Label>
+                  </div>
+                </div>
+                
+                {watchHasJobDeadline && (
+                  <div>
+                    <Label htmlFor="jobDeadline">Job Deadline *</Label>
+                    <Input
+                      id="jobDeadline"
+                      type="datetime-local"
+                      {...register("jobDeadline", { 
+                        required: watchHasJobDeadline ? "Job deadline is required when enabled" : false 
+                      })}
+                      className="mt-1"
+                    />
+                    {errors.jobDeadline && (
+                      <p className="text-sm text-destructive mt-1">{errors.jobDeadline.message}</p>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -165,7 +219,7 @@ export default function CreateJob() {
                 <CardTitle>Job Steps</CardTitle>
                 <Button
                   type="button"
-                  onClick={() => append({ title: "", description: "", instructions: "" })}
+                  onClick={() => append({ title: "", description: "", instructions: "", hasDeadline: false, deadline: "" })}
                   variant="outline"
                   size="sm"
                 >
@@ -225,6 +279,39 @@ export default function CreateJob() {
                         className="mt-1"
                         rows={2}
                       />
+                    </div>
+
+                    {/* Step Deadline Toggle */}
+                    <div className="mt-4 space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <Switch
+                          checked={watchSteps[index]?.hasDeadline || false}
+                          onCheckedChange={(checked) => setValue(`steps.${index}.hasDeadline`, checked)}
+                        />
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <Label htmlFor={`steps.${index}.hasDeadline`}>Set step deadline</Label>
+                        </div>
+                      </div>
+                      
+                      {watchSteps[index]?.hasDeadline && (
+                        <div>
+                          <Label htmlFor={`steps.${index}.deadline`}>Step Deadline *</Label>
+                          <Input
+                            id={`steps.${index}.deadline`}
+                            type="datetime-local"
+                            {...register(`steps.${index}.deadline`, { 
+                              required: watchSteps[index]?.hasDeadline ? "Step deadline is required when enabled" : false 
+                            })}
+                            className="mt-1"
+                          />
+                          {errors.steps?.[index]?.deadline && (
+                            <p className="text-sm text-destructive mt-1">
+                              {errors.steps[index]?.deadline?.message}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
