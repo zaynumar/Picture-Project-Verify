@@ -2,12 +2,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Camera, CheckCircle, Clock, Users, X } from "lucide-react";
-import { useState } from "react";
+import { Camera, CheckCircle, Clock, Users, X, Moon, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Landing() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check for saved theme preference or default to light mode
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+    if (!isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -20,6 +43,14 @@ export default function Landing() {
               <h1 className="text-xl font-semibold">Photo Verification System</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Button
+                onClick={toggleDarkMode}
+                variant="secondary"
+                size="sm"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+              >
+                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               <Dialog open={isAboutOpen} onOpenChange={setIsAboutOpen}>
                 <DialogTrigger asChild>
                   <Button 
