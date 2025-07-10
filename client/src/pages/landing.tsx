@@ -29,8 +29,8 @@ export default function Landing() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* About Section */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-8">About</h2>
-          <h3 className="text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl font-bold text-foreground mb-8">About</h2>
+          <h3 className="text-2xl font-semibold text-foreground mb-4">
             Streamline Your Field Work Documentation
           </h3>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
