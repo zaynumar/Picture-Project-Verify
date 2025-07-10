@@ -32,7 +32,7 @@ function Router() {
         <Route path="/" component={Landing} />
       ) : (
         <>
-          {(user as any)?.role === "manager" ? (
+          {((user as any)?.role === "manager" || (user as any)?.role === "manager_view_only") ? (
             <>
               <Route path="/" component={ManagerDashboard} />
               <Route path="/manager" component={ManagerDashboard} />

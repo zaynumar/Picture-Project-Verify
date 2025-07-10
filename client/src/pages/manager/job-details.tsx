@@ -331,15 +331,17 @@ export default function JobDetails() {
                         <Badge className={getStepStatusColor(step.status)}>
                           {step.status.replace('_', ' ')}
                         </Badge>
-                        <Button
-                          onClick={() => deleteStep.mutate(step.id)}
-                          disabled={deleteStep.isPending}
-                          variant="outline"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {(user as any)?.role === "manager" && (
+                          <Button
+                            onClick={() => deleteStep.mutate(step.id)}
+                            disabled={deleteStep.isPending}
+                            variant="outline"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
@@ -394,8 +396,8 @@ export default function JobDetails() {
                                 />
                               </div>
                               
-                              {/* Review Actions - Only show if this upload hasn't been reviewed yet */}
-                              {step.status === "awaiting_review" && hasNoReview && (
+                              {/* Review Actions - Only show if this upload hasn't been reviewed yet and user is manager */}
+                              {step.status === "awaiting_review" && hasNoReview && (user as any)?.role === "manager" && (
                                 <div className="flex items-center space-x-3">
                                   <Button 
                                     onClick={() => approveUpload.mutate(latestUpload.id)}
@@ -413,6 +415,15 @@ export default function JobDetails() {
                                     <XCircle className="h-4 w-4 mr-2" />
                                     Reject
                                   </Button>
+                                </div>
+                              )}
+                              
+                              {/* View-only message for manager_view_only users */}
+                              {step.status === "awaiting_review" && hasNoReview && (user as any)?.role === "manager_view_only" && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                  <p className="text-sm text-blue-800">
+                                    This photo is awaiting review. You have view-only access and cannot approve or reject submissions.
+                                  </p>
                                 </div>
                               )}
                               

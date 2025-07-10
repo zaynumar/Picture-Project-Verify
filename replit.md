@@ -28,7 +28,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Database Schema
 The application uses PostgreSQL with the following main entities:
-- **Users**: Stores user information with roles (manager/worker)
+- **Users**: Stores user information with roles (manager/manager_view_only/worker)
 - **Jobs**: Represents work assignments with status tracking
 - **Steps**: Sequential tasks within jobs that require photo verification
 - **Uploads**: Photo submissions linked to steps
@@ -39,7 +39,7 @@ The application uses PostgreSQL with the following main entities:
 
 ### Authentication System
 - Uses Replit's OpenID Connect authentication
-- Role-based access control (managers vs workers)
+- Role-based access control (managers vs manager_view_only vs workers)
 - Session persistence with PostgreSQL storage
 - Automatic redirection for unauthorized access
 
@@ -145,3 +145,20 @@ The architecture supports scalability through its modular design, proper separat
 - Workers can now view and work on multiple jobs simultaneously
 - Each job shows as a card with progress, current step details, and upload functionality
 - Added delete step functionality for managers in job details page
+
+### July 10, 2025 - New Manager View-Only Role Implementation
+- Added new "Manager_view_only" user role with read-only access to all jobs and tasks
+- Updated database schema to support the new role type
+- Manager_view_only users can:
+  - View all jobs created by any manager
+  - Access job details and step progress
+  - Download submitted photos
+  - View all users and their roles
+- Manager_view_only users cannot:
+  - Create new jobs or steps
+  - Approve or reject photo submissions
+  - Delete jobs or steps
+  - Modify user roles
+- Updated UI to conditionally hide create/modify functionality for view-only users
+- Added visual indicators and helpful messages for restricted actions
+- Enhanced role color coding in user management (purple for manager_view_only)

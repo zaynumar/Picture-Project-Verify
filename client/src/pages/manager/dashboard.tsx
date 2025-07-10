@@ -176,10 +176,12 @@ export default function ManagerDashboard() {
               <Users className="h-4 w-4 mr-2" />
               Manage Users
             </Button>
-            <Button onClick={() => setLocation('/manager/create-job')}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Job
-            </Button>
+            {(user as any)?.role === "manager" && (
+              <Button onClick={() => setLocation('/manager/create-job')}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Job
+              </Button>
+            )}
           </div>
         </div>
 
@@ -190,12 +192,17 @@ export default function ManagerDashboard() {
               <List className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No jobs yet</h3>
               <p className="text-muted-foreground mb-4">
-                Create your first job to start managing field worker photo verification workflows.
+                {(user as any)?.role === "manager" 
+                  ? "Create your first job to start managing field worker photo verification workflows."
+                  : "No jobs to display. Jobs will appear here when created by managers."
+                }
               </p>
-              <Button onClick={() => setLocation('/manager/create-job')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Job
-              </Button>
+              {(user as any)?.role === "manager" && (
+                <Button onClick={() => setLocation('/manager/create-job')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Job
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -216,19 +223,21 @@ export default function ManagerDashboard() {
                             {jobStatus.replace('_', ' ')}
                           </span>
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
-                              deleteJob.mutate(job.id);
-                            }
-                          }}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {(user as any)?.role === "manager" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
+                                deleteJob.mutate(job.id);
+                              }
+                            }}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardHeader>

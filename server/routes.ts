@@ -47,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       
-      if (!user || user.role !== "manager") {
+      if (!user || (user.role !== "manager" && user.role !== "manager_view_only")) {
         return res.status(403).json({ message: "Only managers can view workers" });
       }
 
@@ -66,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       
-      if (!user || user.role !== "manager") {
+      if (!user || (user.role !== "manager" && user.role !== "manager_view_only")) {
         return res.status(403).json({ message: "Only managers can view users" });
       }
 
@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { role } = req.body;
       const targetUserId = req.params.id;
       
-      if (!["manager", "worker"].includes(role)) {
+      if (!["manager", "manager_view_only", "worker"].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
 
@@ -161,8 +161,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let jobs;
-      if (user.role === "manager") {
-        jobs = await storage.getJobsByManager(userId);
+      if (user.role === "manager" || user.role === "manager_view_only") {
+        // Get all jobs for managers and manager_view_only users
+        const allUsers = await storage.getAllUsers();
+        const allManagerJobs = await Promise.all(
+          allUsers.filter(u => u.role === "manager").map(manager => storage.getJobsByManager(manager.id))
+        );
+        jobs = allManagerJobs.flat();
       } else {
         jobs = await storage.getJobsByWorker(userId);
       }
@@ -185,7 +190,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user has access to this job
-      if (job.managerId !== userId && job.workerId !== userId) {
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Allow manager_view_only to view all jobs
+      if (user.role === "manager_view_only") {
+        // manager_view_only can view any job
+      } else if (job.managerId !== userId && job.workerId !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
 

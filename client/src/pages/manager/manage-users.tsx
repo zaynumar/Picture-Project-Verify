@@ -54,6 +54,7 @@ export default function ManageUsers() {
   const getRoleColor = (role: string) => {
     switch (role) {
       case "manager": return "bg-blue-100 text-blue-800";
+      case "manager_view_only": return "bg-purple-100 text-purple-800";
       case "worker": return "bg-green-100 text-green-800";
       default: return "bg-gray-100 text-gray-800";
     }
@@ -150,6 +151,7 @@ export default function ManageUsers() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="manager_view_only">Manager (View Only)</SelectItem>
                         <SelectItem value="worker">Worker</SelectItem>
                       </SelectContent>
                     </Select>
