@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
 import { Plus, RefreshCw, Clock, CheckCircle, AlertCircle, User, Calendar, List, Users, Trash2 } from "lucide-react";
 import type { JobWithDetails } from "@shared/schema";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 
 export default function ManagerDashboard() {
   const { toast } = useToast();
@@ -131,12 +135,15 @@ export default function ManagerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-semibold">Manager Dashboard</h1>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        {/* Header */}
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <div className="flex items-center justify-between w-full">
+            <h1 className="text-lg font-semibold">Manager Dashboard</h1>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center">
@@ -150,119 +157,118 @@ export default function ManagerDashboard() {
                 onClick={() => window.location.href = '/api/logout'}
                 variant="secondary"
                 size="sm"
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
               >
                 Logout
               </Button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Active Jobs</h2>
-            <p className="text-muted-foreground">Monitor and manage field worker photo verification workflows</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button onClick={() => refetch()} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Button onClick={() => setLocation('/manager/manage-users')} variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Manage Users
-            </Button>
-            <Button onClick={() => setLocation('/manager/create-job')}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Job
-            </Button>
-          </div>
-        </div>
-
-        {/* Jobs Grid */}
-        {jobs.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <List className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No jobs yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Create your first job to start managing field worker photo verification workflows.
-              </p>
+        {/* Main Content */}
+        <main className="flex-1 p-6">
+          {/* Header Section */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Active Jobs</h2>
+              <p className="text-muted-foreground">Monitor and manage field worker photo verification workflows</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button onClick={() => refetch()} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button onClick={() => setLocation('/manager/manage-users')} variant="outline">
+                <Users className="h-4 w-4 mr-2" />
+                Manage Users
+              </Button>
               <Button onClick={() => setLocation('/manager/create-job')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Job
+                New Job
               </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {jobs.map((job: JobWithDetails) => {
-              const jobStatus = getJobStatus(job);
-              const currentStep = getCurrentStep(job);
-              
-              return (
-                <Card key={job.id} className="hover:shadow-lg transition-all">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg truncate">{job.title}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getStatusColor(jobStatus)}>
-                          {getStatusIcon(jobStatus)}
-                          <span className="ml-1 capitalize">
-                            {jobStatus.replace('_', ' ')}
-                          </span>
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
-                              deleteJob.mutate(job.id);
-                            }
-                          }}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent 
-                    className="cursor-pointer"
-                    onClick={() => setLocation(`/manager/job/${job.id}`)}
-                  >
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center text-muted-foreground">
-                        <User className="h-4 w-4 mr-2" />
-                        <span>Worker: {job.worker.firstName} {job.worker.lastName}</span>
-                      </div>
-                      <div className="flex items-center text-muted-foreground">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <span>Started: {formatTimeAgo(job.createdAt!)}</span>
-                      </div>
-                      <div className="flex items-center text-muted-foreground">
-                        <List className="h-4 w-4 mr-2" />
-                        <span>Step {currentStep} of {job.steps.length}</span>
-                      </div>
-                    </div>
-                    
-                    {job.description && (
-                      <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
-                        {job.description}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            </div>
           </div>
-        )}
-      </main>
-    </div>
+
+          {/* Jobs Grid */}
+          {jobs.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <List className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No jobs yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Create your first job to start managing field worker photo verification workflows.
+                </p>
+                <Button onClick={() => setLocation('/manager/create-job')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Job
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {jobs.map((job: JobWithDetails) => {
+                const jobStatus = getJobStatus(job);
+                const currentStep = getCurrentStep(job);
+                
+                return (
+                  <Card key={job.id} className="hover:shadow-lg transition-all">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg truncate">{job.title}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getStatusColor(jobStatus)}>
+                            {getStatusIcon(jobStatus)}
+                            <span className="ml-1 capitalize">
+                              {jobStatus.replace('_', ' ')}
+                            </span>
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
+                                deleteJob.mutate(job.id);
+                              }
+                            }}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent 
+                      className="cursor-pointer"
+                      onClick={() => setLocation(`/manager/job/${job.id}`)}
+                    >
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center text-muted-foreground">
+                          <User className="h-4 w-4 mr-2" />
+                          <span>Worker: {job.worker.firstName} {job.worker.lastName}</span>
+                        </div>
+                        <div className="flex items-center text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          <span>Started: {formatTimeAgo(job.createdAt!)}</span>
+                        </div>
+                        <div className="flex items-center text-muted-foreground">
+                          <List className="h-4 w-4 mr-2" />
+                          <span>Step {currentStep} of {job.steps.length}</span>
+                        </div>
+                      </div>
+                      
+                      {job.description && (
+                        <p className="text-sm text-muted-foreground mt-3 line-clamp-2">
+                          {job.description}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
