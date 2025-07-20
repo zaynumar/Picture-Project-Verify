@@ -10,6 +10,8 @@ import ManagerDashboard from "@/pages/manager/dashboard";
 import JobDetails from "@/pages/manager/job-details";
 import CreateJob from "@/pages/manager/create-job";
 import ManageUsers from "@/pages/manager/manage-users";
+import UploadDocuments from "@/pages/manager/upload-documents";
+import DocumentSetDetails from "@/pages/manager/document-set-details";
 import WorkerDashboard from "@/pages/worker/dashboard";
 
 function Router() {
@@ -39,6 +41,8 @@ function Router() {
               <Route path="/manager/job/:id" component={JobDetails} />
               <Route path="/manager/create-job" component={CreateJob} />
               <Route path="/manager/manage-users" component={ManageUsers} />
+              <Route path="/manager/upload-documents" component={UploadDocuments} />
+              <Route path="/manager/document-set/:id" component={DocumentSetDetails} />
             </>
           ) : (
             <>

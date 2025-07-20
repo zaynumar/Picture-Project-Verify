@@ -8,8 +8,120 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link, useLocation } from "wouter";
-import { Plus, RefreshCw, Clock, CheckCircle, AlertCircle, User, Calendar, List, Users, Trash2 } from "lucide-react";
-import type { JobWithDetails } from "@shared/schema";
+import { Plus, RefreshCw, Clock, CheckCircle, AlertCircle, User, Calendar, List, Users, Trash2, FileText } from "lucide-react";
+import type { JobWithDetails, User as UserType, DocumentSetWithDetails } from "@shared/schema";
+
+// Document Sets List Component
+function DocumentSetsList() {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
+  const { data: documentSets = [], isLoading } = useQuery<DocumentSetWithDetails[]>({
+    queryKey: ["/api/document-sets"],
+  });
+
+  const deleteDocumentSet = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/document-sets/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Document set deleted successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/document-sets"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete document set",
+        variant: "destructive",
+      });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="text-center py-8">
+        <CardContent>
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading document sets...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (documentSets.length === 0) {
+    return (
+      <Card className="text-center py-12">
+        <CardContent>
+          <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No document sets yet</h3>
+          <p className="text-muted-foreground mb-4">
+            Upload your first document set to manage PDF documents.
+          </p>
+          <Button onClick={() => setLocation('/manager/upload-documents')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Upload Documents
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {documentSets.map((documentSet) => (
+        <Card key={documentSet.id} className="hover:shadow-lg transition-all">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg truncate">{documentSet.title}</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  <FileText className="h-3 w-3 mr-1" />
+                  {documentSet.documents.length} files
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm("Are you sure you want to delete this document set? This action cannot be undone.")) {
+                      deleteDocumentSet.mutate(documentSet.id);
+                    }
+                  }}
+                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent 
+            className="cursor-pointer"
+            onClick={() => setLocation(`/manager/document-set/${documentSet.id}`)}
+          >
+            {documentSet.description && (
+              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                {documentSet.description}
+              </p>
+            )}
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center text-muted-foreground">
+                <Calendar className="h-4 w-4 mr-2" />
+                <span>Created: {new Date((documentSet as any).createdAt).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center text-muted-foreground">
+                <User className="h-4 w-4 mr-2" />
+                <span>By: {documentSet.manager.firstName} {documentSet.manager.lastName}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 export default function ManagerDashboard() {
   const { toast } = useToast();
@@ -141,10 +253,10 @@ export default function ManagerDashboard() {
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium">
-                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                    {(user as UserType)?.firstName?.charAt(0)}{(user as UserType)?.lastName?.charAt(0)}
                   </span>
                 </div>
-                <span className="text-sm">{user?.firstName} {user?.lastName}</span>
+                <span className="text-sm">{(user as UserType)?.firstName} {(user as UserType)?.lastName}</span>
               </div>
               <Button 
                 onClick={() => window.location.href = '/api/logout'}
@@ -177,10 +289,16 @@ export default function ManagerDashboard() {
               Manage Users
             </Button>
             {(user as any)?.role === "manager" && (
-              <Button onClick={() => setLocation('/manager/create-job')}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Job
-              </Button>
+              <>
+                <Button onClick={() => setLocation('/manager/upload-documents')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Upload Documents
+                </Button>
+                <Button onClick={() => setLocation('/manager/create-job')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Job
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -252,7 +370,7 @@ export default function ManagerDashboard() {
                       </div>
                       <div className="flex items-center text-muted-foreground">
                         <Calendar className="h-4 w-4 mr-2" />
-                        <span>Started: {formatTimeAgo(job.createdAt!)}</span>
+                        <span>Started: {formatTimeAgo((job as any).createdAt!)}</span>
                       </div>
                       <div className="flex items-center text-muted-foreground">
                         <List className="h-4 w-4 mr-2" />
@@ -275,6 +393,20 @@ export default function ManagerDashboard() {
                 </Card>
               );
             })}
+          </div>
+        )}
+
+        {/* Document Sets Section */}
+        {(user as any)?.role === "manager" && (
+          <div className="mt-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Document Sets</h2>
+                <p className="text-muted-foreground">Manage uploaded PDF documents</p>
+              </div>
+            </div>
+            
+            <DocumentSetsList />
           </div>
         )}
       </main>

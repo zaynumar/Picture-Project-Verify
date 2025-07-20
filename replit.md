@@ -175,3 +175,25 @@ The architecture supports scalability through its modular design, proper separat
   - Job details page displays job and step deadlines with orange color coding
   - Worker dashboard shows both job and step deadlines for prioritization
 - Deadline information helps teams prioritize work and meet time constraints
+
+### July 20, 2025 - Document Management System Implementation
+- Added comprehensive document management system for PDF uploads
+- New database tables: document_sets and documents with proper relations
+- Manager features:
+  - "Upload Documents" button on dashboard to create document sets
+  - Multi-file PDF upload with drag-and-drop interface
+  - Individual metadata (title, description) for each document
+  - Document sets displayed on manager dashboard with file counts
+  - Document set details page with download functionality
+  - Delete functionality for document sets with cascade deletion
+- Technical implementation:
+  - Document sets mirror job system architecture
+  - Multer for handling multiple PDF uploads
+  - File storage in uploads directory with unique filenames
+  - RESTful API endpoints for CRUD operations
+  - Role-based access control (managers only can upload/delete)
+- UI enhancements:
+  - Document sets section on manager dashboard
+  - Grid layout showing document sets with metadata
+  - Individual document viewing with file size formatting
+  - Download buttons for each PDF document

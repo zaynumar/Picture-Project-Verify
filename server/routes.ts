@@ -437,6 +437,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Document Set routes
+  app.post("/api/document-sets", isAuthenticated, upload.array("documents", 10), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== "manager") {
+        return res.status(403).json({ message: "Only managers can create document sets" });
+      }
+
+      const { title, description, documents: documentDetails } = req.body;
+      const files = req.files as Express.Multer.File[];
+      
+      if (!title || !files || files.length === 0) {
+        return res.status(400).json({ 
+          message: "Title and at least one document are required"
+        });
+      }
+
+      // Parse document details JSON if it's a string
+      let parsedDocumentDetails;
+      try {
+        parsedDocumentDetails = typeof documentDetails === 'string' 
+          ? JSON.parse(documentDetails) 
+          : documentDetails;
+      } catch (e) {
+        parsedDocumentDetails = [];
+      }
+
+      // Create the document set
+      const documentSet = await storage.createDocumentSet({
+        title,
+        description,
+        managerId: userId,
+      });
+
+      // Create documents
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const details = parsedDocumentDetails[i] || {};
+        
+        await storage.createDocument({
+          documentSetId: documentSet.id,
+          title: details.title || file.originalname,
+          description: details.description || "",
+          filename: file.filename,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          order: i + 1,
+        });
+      }
+
+      const fullDocumentSet = await storage.getDocumentSet(documentSet.id);
+      res.json(fullDocumentSet);
+    } catch (error) {
+      console.error("Error creating document set:", error);
+      res.status(500).json({ message: "Failed to create document set" });
+    }
+  });
+
+  app.get("/api/document-sets", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || (user.role !== "manager" && user.role !== "manager_view_only")) {
+        return res.status(403).json({ message: "Only managers can view document sets" });
+      }
+
+      const documentSets = await storage.getDocumentSetsByManager(userId);
+      res.json(documentSets);
+    } catch (error) {
+      console.error("Error fetching document sets:", error);
+      res.status(500).json({ message: "Failed to fetch document sets" });
+    }
+  });
+
+  app.get("/api/document-sets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const documentSetId = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const documentSet = await storage.getDocumentSet(documentSetId);
+      if (!documentSet) {
+        return res.status(404).json({ message: "Document set not found" });
+      }
+
+      // Check if user has access to this document set
+      if (user.role === "manager_view_only" || 
+          (user.role === "manager" && documentSet.managerId === userId)) {
+        res.json(documentSet);
+      } else {
+        res.status(403).json({ message: "Access denied" });
+      }
+    } catch (error) {
+      console.error("Error fetching document set:", error);
+      res.status(500).json({ message: "Failed to fetch document set" });
+    }
+  });
+
+  app.delete("/api/document-sets/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== "manager") {
+        return res.status(403).json({ message: "Only managers can delete document sets" });
+      }
+
+      const documentSetId = parseInt(req.params.id);
+      const documentSet = await storage.getDocumentSet(documentSetId);
+      
+      if (!documentSet) {
+        return res.status(404).json({ message: "Document set not found" });
+      }
+
+      if (documentSet.managerId !== userId) {
+        return res.status(403).json({ message: "You can only delete your own document sets" });
+      }
+
+      await storage.deleteDocumentSet(documentSetId);
+      res.json({ message: "Document set deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting document set:", error);
+      res.status(500).json({ message: "Failed to delete document set" });
+    }
+  });
+
   // Serve uploaded files
   app.use("/api/uploads", express.static(path.join(process.cwd(), "uploads")));
 

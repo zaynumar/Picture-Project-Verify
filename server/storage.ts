@@ -4,6 +4,8 @@ import {
   steps,
   uploads,
   reviews,
+  documentSets,
+  documents,
   type User,
   type UpsertUser,
   type Job,
@@ -16,6 +18,11 @@ import {
   type InsertReview,
   type JobWithDetails,
   type StepWithDetails,
+  type DocumentSet,
+  type InsertDocumentSet,
+  type Document,
+  type InsertDocument,
+  type DocumentSetWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, ne } from "drizzle-orm";
@@ -48,11 +55,22 @@ export interface IStorage {
   getUpload(id: number): Promise<Upload | undefined>;
   
   // Review operations
-  createReview(review: InsertReview): Promise<Review>;
+  createReview(review: InsertReview & { managerId: string }): Promise<Review>;
   getReviewsByUpload(uploadId: number): Promise<Review[]>;
   
   // Dashboard operations
   getWorkerCurrentStep(workerId: string): Promise<StepWithDetails | undefined>;
+  
+  // Document operations
+  createDocumentSet(documentSet: InsertDocumentSet & { managerId: string }): Promise<DocumentSet>;
+  getDocumentSet(id: number): Promise<DocumentSetWithDetails | undefined>;
+  getDocumentSetsByManager(managerId: string): Promise<DocumentSetWithDetails[]>;
+  deleteDocumentSet(id: number): Promise<void>;
+  
+  // Document operations
+  createDocument(document: InsertDocument): Promise<Document>;
+  getDocumentsBySet(documentSetId: number): Promise<Document[]>;
+  deleteDocument(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -246,7 +264,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Review operations
-  async createReview(review: InsertReview): Promise<Review> {
+  async createReview(review: InsertReview & { managerId: string }): Promise<Review> {
     const [newReview] = await db.insert(reviews).values(review).returning();
     return newReview;
   }
@@ -281,6 +299,63 @@ export class DatabaseStorage implements IStorage {
     });
 
     return result as StepWithDetails | undefined;
+  }
+
+  // Document Set operations
+  async createDocumentSet(documentSet: InsertDocumentSet & { managerId: string }): Promise<DocumentSet> {
+    const [newDocumentSet] = await db.insert(documentSets).values(documentSet).returning();
+    return newDocumentSet;
+  }
+
+  async getDocumentSet(id: number): Promise<DocumentSetWithDetails | undefined> {
+    const result = await db.query.documentSets.findFirst({
+      where: eq(documentSets.id, id),
+      with: {
+        manager: true,
+        documents: {
+          orderBy: asc(documents.order),
+        },
+      },
+    });
+    return result as DocumentSetWithDetails | undefined;
+  }
+
+  async getDocumentSetsByManager(managerId: string): Promise<DocumentSetWithDetails[]> {
+    const result = await db.query.documentSets.findMany({
+      where: eq(documentSets.managerId, managerId),
+      with: {
+        manager: true,
+        documents: {
+          orderBy: asc(documents.order),
+        },
+      },
+      orderBy: desc(documentSets.createdAt),
+    });
+    return result as DocumentSetWithDetails[];
+  }
+
+  async deleteDocumentSet(id: number): Promise<void> {
+    // Delete all documents in the set first
+    await db.delete(documents).where(eq(documents.documentSetId, id));
+    // Then delete the document set
+    await db.delete(documentSets).where(eq(documentSets.id, id));
+  }
+
+  // Document operations
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const [newDocument] = await db.insert(documents).values(document).returning();
+    return newDocument;
+  }
+
+  async getDocumentsBySet(documentSetId: number): Promise<Document[]> {
+    return await db.select()
+      .from(documents)
+      .where(eq(documents.documentSetId, documentSetId))
+      .orderBy(asc(documents.order));
+  }
+
+  async deleteDocument(id: number): Promise<void> {
+    await db.delete(documents).where(eq(documents.id, id));
   }
 }
 

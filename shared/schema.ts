@@ -118,6 +118,21 @@ export const usersRelations = relations(users, ({ many }) => ({
   documentSets: many(documentSets),
 }));
 
+export const documentSetsRelations = relations(documentSets, ({ one, many }) => ({
+  manager: one(users, {
+    fields: [documentSets.managerId],
+    references: [users.id],
+  }),
+  documents: many(documents),
+}));
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+  documentSet: one(documentSets, {
+    fields: [documents.documentSetId],
+    references: [documentSets.id],
+  }),
+}));
+
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
   manager: one(users, {
     fields: [jobs.managerId],
@@ -187,6 +202,18 @@ export const insertReviewSchema = createInsertSchema(reviews).omit({
   managerId: true, // managerId is added by server
 });
 
+export const insertDocumentSetSchema = createInsertSchema(documentSets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  managerId: true, // managerId is added by server
+});
+
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+  uploadedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -198,6 +225,10 @@ export type Upload = typeof uploads.$inferSelect;
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type DocumentSet = typeof documentSets.$inferSelect;
+export type InsertDocumentSet = z.infer<typeof insertDocumentSetSchema>;
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 
 // Job with relations
 export type JobWithDetails = Job & {
@@ -215,4 +246,10 @@ export type StepWithDetails = Step & {
   uploads: (Upload & {
     reviews: Review[];
   })[];
+};
+
+// DocumentSet with relations
+export type DocumentSetWithDetails = DocumentSet & {
+  manager: User;
+  documents: Document[];
 };
