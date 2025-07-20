@@ -1,20 +1,22 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Camera, CheckCircle, Clock, Users, X, Moon, Sun } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import PhoneAuth from "@/components/phone-auth";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Landing() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     // Check for saved theme preference or default to light mode
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
       setIsDarkMode(true);
       document.documentElement.classList.add('dark');
@@ -31,6 +33,23 @@ export default function Landing() {
       localStorage.setItem('theme', 'light');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Camera className="h-12 w-12 text-primary mx-auto mb-4" />
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    // User is already authenticated, redirect to appropriate dashboard
+    window.location.href = user.role === 'manager' ? '/manager' : '/worker';
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,36 +181,13 @@ export default function Landing() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button 
-                onClick={() => window.location.href = '/api/login'}
-                variant="secondary"
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-              >
-                Sign In
-              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Simplified Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center">
-          <div className="flex justify-center mb-8">
-            <Camera className="h-24 w-24 text-primary" />
-          </div>
-          <h2 className="text-4xl font-bold text-foreground mb-8">
-            Photo Verification System
-          </h2>
-          <Button 
-            onClick={() => window.location.href = '/api/login'}
-            size="lg"
-            className="bg-primary hover:bg-primary/90 text-lg px-8 py-3"
-          >
-            Sign In
-          </Button>
-        </div>
-      </main>
+      {/* Phone Authentication Component */}
+      <PhoneAuth />
     </div>
   );
 }
