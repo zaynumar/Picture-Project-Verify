@@ -46,8 +46,8 @@ export default function Landing() {
   }
 
   if (user) {
-    // User is already authenticated, redirect to appropriate dashboard
-    window.location.href = user.role === 'manager' ? '/manager' : '/worker';
+    // User is authenticated with Firebase, redirect to manager dashboard for now
+    window.location.href = '/manager';
     return null;
   }
 

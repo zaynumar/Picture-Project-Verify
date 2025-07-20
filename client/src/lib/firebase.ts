@@ -5,13 +5,11 @@ import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCT2jV9l2L1m8W2JD0uIFm_oO8osQLRLG0",
-  authDomain: "solarphonelogin.firebaseapp.com",
-  projectId: "solarphonelogin",
-  storageBucket: "solarphonelogin.firebasestorage.app",
-  messagingSenderId: "786062483251",
-  appId: "1:786062483251:web:ba25b2cbdf864cf7a56846",
-  measurementId: "G-82RBZMEZYG"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase

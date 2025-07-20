@@ -83,8 +83,7 @@ export default function PhoneAuth() {
         description: "Phone number verified successfully!",
         variant: "default",
       });
-      // Redirect or update UI as needed
-      window.location.reload();
+      // User is now authenticated, Firebase auth state will update automatically
     } catch (error: any) {
       console.error("Error verifying code:", error);
       toast({
