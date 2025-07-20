@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { isAuthenticated } from "./replitAuth";
 import { insertJobSchema, insertStepSchema, insertReviewSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
