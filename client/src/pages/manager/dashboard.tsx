@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import { useReplitAuth } from "@/hooks/useReplitAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -125,8 +126,14 @@ function DocumentSetsList() {
 
 export default function ManagerDashboard() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const firebaseAuth = useAuth();
+  const replitAuth = useReplitAuth();
   const [, setLocation] = useLocation();
+
+  // Check both auth methods
+  const isAuthenticated = firebaseAuth.isAuthenticated || replitAuth.isAuthenticated;
+  const isLoading = firebaseAuth.isLoading || replitAuth.isLoading;
+  const user = firebaseAuth.user || replitAuth.user;
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -137,7 +144,7 @@ export default function ManagerDashboard() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/";
       }, 500);
       return;
     }
@@ -253,10 +260,15 @@ export default function ManagerDashboard() {
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium">
-                    {(user as UserType)?.firstName?.charAt(0)}{(user as UserType)?.lastName?.charAt(0)}
+                    {replitAuth.isAuthenticated ? (replitAuth.user as any)?.firstName?.charAt(0) || 'U' : 'U'}
                   </span>
                 </div>
-                <span className="text-sm">{(user as UserType)?.firstName} {(user as UserType)?.lastName}</span>
+                <span className="text-sm">
+                  {replitAuth.isAuthenticated ? 
+                    `${(replitAuth.user as any)?.firstName || 'User'} ${(replitAuth.user as any)?.lastName || ''}` : 
+                    'User'
+                  }
+                </span>
               </div>
               <Button 
                 onClick={() => window.location.href = '/api/logout'}

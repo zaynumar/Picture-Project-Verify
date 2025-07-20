@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
+import { useReplitAuth } from "@/hooks/useReplitAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,9 +27,15 @@ import type { JobWithDetails, StepWithDetails } from "@shared/schema";
 
 export default function WorkerDashboard() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const firebaseAuth = useAuth();
+  const replitAuth = useReplitAuth();
   const queryClient = useQueryClient();
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
+
+  // Check both auth methods
+  const isAuthenticated = firebaseAuth.isAuthenticated || replitAuth.isAuthenticated;
+  const isLoading = firebaseAuth.isLoading || replitAuth.isLoading;
+  const user = firebaseAuth.user || replitAuth.user;
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -39,7 +46,7 @@ export default function WorkerDashboard() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/";
       }, 500);
       return;
     }
