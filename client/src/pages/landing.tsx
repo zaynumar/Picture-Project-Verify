@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Camera, CheckCircle, Clock, Users, X, Moon, Sun } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import PhoneAuth from "@/components/phone-auth";
+import { PhoneAuth } from "@/components/phone-auth";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Landing() {
@@ -186,7 +186,7 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Phone Authentication Component */}
+      {/* Phone Authentication Section */}
       <PhoneAuth />
     </div>
   );
