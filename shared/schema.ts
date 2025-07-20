@@ -115,6 +115,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   workerJobs: many(jobs, { relationName: "worker" }),
   uploads: many(uploads),
   reviews: many(reviews),
+  documentSets: many(documentSets),
 }));
 
 export const jobsRelations = relations(jobs, ({ one, many }) => ({
