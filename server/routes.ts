@@ -46,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || (user.role !== "manager" && user.role !== "manager_view_only")) {
         return res.status(403).json({ message: "Only managers can view workers" });
       }
@@ -65,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || (user.role !== "manager" && user.role !== "manager_view_only")) {
         return res.status(403).json({ message: "Only managers can view users" });
       }
@@ -83,14 +83,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can update user roles" });
       }
 
       const { role } = req.body;
       const targetUserId = req.params.id;
-      
+
       if (!["manager", "manager_view_only", "worker"].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
@@ -108,13 +108,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can create jobs" });
       }
 
       const { title, description, workerId, steps, hasJobDeadline, jobDeadline } = req.body;
-      
+
       if (!title || !workerId || !steps || steps.length === 0) {
         return res.status(400).json({ 
           message: "Title, worker ID, and at least one step are required"
@@ -141,14 +141,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the steps
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        
+
         // Validate step deadline if enabled
         if (step.hasDeadline && !step.deadline) {
           return res.status(400).json({ 
             message: `Step ${i + 1} deadline is required when deadline toggle is enabled`
           });
         }
-        
+
         await storage.createStep({
           jobId: job.id,
           title: step.title,
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -200,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const jobId = parseInt(req.params.id);
       const userId = req.user.claims.sub;
-      
+
       const job = await storage.getJob(jobId);
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
@@ -211,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       // Allow manager_view_only to view all jobs
       if (user.role === "manager_view_only") {
         // manager_view_only can view any job
@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can create steps" });
       }
@@ -256,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "worker") {
         return res.status(403).json({ message: "Only workers can upload photos" });
       }
@@ -299,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can review uploads" });
       }
@@ -321,17 +321,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (upload) {
         // Don't update step status here, we'll do it after the workflow logic
         console.log(`Creating review for upload ${upload.id}, status: ${validation.data.status}`);
-        
+
         // Update step status and handle workflow
         if (validation.data.status === "approved") {
           await storage.updateStepStatus(upload.stepId, "approved");
-          
+
           // Find and activate next step
           const step = await storage.getStep(upload.stepId);
           if (step) {
             const allSteps = await storage.getStepsByJob(step.jobId);
             const sortedSteps = allSteps.sort((a, b) => a.order - b.order);
-            
+
             // Find the next step to activate
             const nextStep = sortedSteps.find(s => s.order > step.order && s.status === "pending");
             if (nextStep) {
@@ -364,14 +364,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can delete jobs" });
       }
 
       const jobId = parseInt(req.params.id);
       const job = await storage.getJob(jobId);
-      
+
       if (!job) {
         return res.status(404).json({ message: "Job not found" });
       }
@@ -393,14 +393,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can delete steps" });
       }
 
       const stepId = parseInt(req.params.id);
       const step = await storage.getStep(stepId);
-      
+
       if (!step) {
         return res.status(404).json({ message: "Step not found" });
       }
@@ -424,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "worker") {
         return res.status(403).json({ message: "Only workers can access this endpoint" });
       }
@@ -442,14 +442,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can create document sets" });
       }
 
       const { title, description, documents: documentDetails } = req.body;
       const files = req.files as Express.Multer.File[];
-      
+
       if (!title || !files || files.length === 0) {
         return res.status(400).json({ 
           message: "Title and at least one document are required"
@@ -477,7 +477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const details = parsedDocumentDetails[i] || {};
-        
+
         await storage.createDocument({
           documentSetId: documentSet.id,
           title: details.title || file.originalname,
@@ -502,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || (user.role !== "manager" && user.role !== "manager_view_only")) {
         return res.status(403).json({ message: "Only managers can view document sets" });
       }
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documentSetId = parseInt(req.params.id);
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -547,14 +547,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user || user.role !== "manager") {
         return res.status(403).json({ message: "Only managers can delete document sets" });
       }
 
       const documentSetId = parseInt(req.params.id);
       const documentSet = await storage.getDocumentSet(documentSetId);
-      
+
       if (!documentSet) {
         return res.status(404).json({ message: "Document set not found" });
       }
@@ -568,6 +568,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting document set:", error);
       res.status(500).json({ message: "Failed to delete document set" });
+    }
+  });
+
+  app.get("/api/logout", (req, res) => {
+    req.logout(() => {
+      res.redirect(
+        client.buildEndSessionUrl(config, {
+          client_id: process.env.REPL_ID!,
+          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+        }).href
+      );
+    });
+  });
+
+  // Add endpoint to check current user for Replit auth
+  app.get("/api/me", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || !user.claims) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const userFromDb = await storage.getUser(user.claims.sub);
+      if (!userFromDb) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(userFromDb);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
