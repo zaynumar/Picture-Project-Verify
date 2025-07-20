@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertJobSchema, insertStepSchema, insertReviewSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -26,12 +26,19 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Note: Authentication middleware removed - using Firebase client-side auth only
+  // Auth middleware
+  await setupAuth(app);
 
-  // Auth routes (Firebase client-side auth only)
-  app.get("/api/auth/user", async (req: any, res) => {
-    // Return mock user for now - replace with Firebase Admin SDK verification later
-    res.json({ id: 1, name: "Firebase User", role: "manager" });
+  // Auth routes for Replit auth
+  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
   });
 
   // Get all workers (for managers to assign jobs)
@@ -564,16 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
-    });
-  });
+  // Logout is handled by Replit Auth in replitAuth.ts
 
   // Add endpoint to check current user for Replit auth
   app.get("/api/me", isAuthenticated, async (req, res) => {

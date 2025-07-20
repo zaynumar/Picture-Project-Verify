@@ -188,8 +188,91 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Phone Authentication Component */}
-      <PhoneAuth />
+      {/* Authentication Section */}
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {authMethod === 'choose' && (
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Choose Login Method</CardTitle>
+                <p className="text-muted-foreground">
+                  Select how you'd like to sign in to the Photo Verification System
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={() => setAuthMethod('replit')}
+                  className="w-full h-12 text-lg"
+                  variant="default"
+                >
+                  <User className="mr-2 h-5 w-5" />
+                  Login with Replit
+                </Button>
+                
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setAuthMethod('phone')}
+                  className="w-full h-12 text-lg"
+                  variant="outline"
+                >
+                  <Phone className="mr-2 h-5 w-5" />
+                  Login with Phone Number
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {authMethod === 'replit' && (
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">Replit Authentication</CardTitle>
+                <p className="text-muted-foreground">
+                  Click the button below to sign in with your Replit account
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={() => window.location.href = '/api/login'}
+                  className="w-full h-12 text-lg"
+                >
+                  <User className="mr-2 h-5 w-5" />
+                  Continue with Replit
+                </Button>
+                <Button
+                  onClick={() => setAuthMethod('choose')}
+                  variant="ghost"
+                  className="w-full"
+                >
+                  ← Back to options
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {authMethod === 'phone' && (
+            <div className="space-y-4">
+              <PhoneAuth />
+              <Button
+                onClick={() => setAuthMethod('choose')}
+                variant="ghost"
+                className="w-full"
+              >
+                ← Back to options
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
