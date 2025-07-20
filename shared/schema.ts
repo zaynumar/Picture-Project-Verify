@@ -85,6 +85,30 @@ export const reviews = pgTable("reviews", {
   reviewedAt: timestamp("reviewed_at").defaultNow(),
 });
 
+// Document sets table
+export const documentSets = pgTable("document_sets", {
+  id: serial("id").primaryKey(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  managerId: varchar("manager_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Documents table
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  documentSetId: integer("document_set_id").notNull(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  filename: varchar("filename").notNull(),
+  originalName: varchar("original_name").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  size: integer("size").notNull(),
+  order: integer("order").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   managedJobs: many(jobs, { relationName: "manager" }),
